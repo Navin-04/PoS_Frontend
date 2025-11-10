@@ -103,6 +103,26 @@
   background-color: #dc2626;
 }
 
+.statusActive {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.statusInactive {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
 .modalOverlay {
   position: fixed;
   top: 0;

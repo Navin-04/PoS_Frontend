@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMockStats } from '../data/mockData';
+import { getMockStats, mockInvoices, mockProducts } from '../data/mockData';
 import styles from './Dashboard.module.css';
 
 const Dashboard = () => {

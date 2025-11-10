@@ -1,28 +1,26 @@
 import React, { createContext, useState, useContext } from 'react';
+import { mockUserAccounts, mockRoles } from '../data/mockData';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
-  // Mock users for authentication
-  const mockUsers = {
-    owner: { id: 'OWNER001', password: 'owner123', role: 'owner', name: 'Rajesh Kumar' },
-    staff1: { id: 'STAFF001', password: 'staff123', role: 'staff', name: 'Priya Sharma' },
-    staff2: { id: 'STAFF002', password: 'staff123', role: 'staff', name: 'Amit Patel' },
-  };
-
-  const login = (userId, password) => {
-    // Find user by ID
-    const foundUser = Object.values(mockUsers).find(
-      (u) => u.id === userId && u.password === password
+  const login = (username, password) => {
+    // Find user by username
+    const foundUser = mockUserAccounts.find(
+      (u) => u.username === username && u.password_hash === password
     );
 
     if (foundUser) {
+      const role = mockRoles.find((r) => r.id === foundUser.role_id);
       const userData = {
         id: foundUser.id,
-        name: foundUser.name,
-        role: foundUser.role,
+        username: foundUser.username,
+        email: foundUser.email,
+        full_name: foundUser.full_name,
+        role: role ? role.name : 'staff',
+        role_id: foundUser.role_id,
       };
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
@@ -59,4 +57,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

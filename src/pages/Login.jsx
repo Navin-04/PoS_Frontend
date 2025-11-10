@@ -67,6 +67,7 @@ const Login = () => {
           <p><strong>Demo Credentials:</strong></p>
           <p>Owner: OWNER001 / owner123</p>
           <p>Staff: STAFF001 / staff123</p>
+          <p>Staff: STAFF002 / staff123</p>
         </div>
       </div>
     </div>

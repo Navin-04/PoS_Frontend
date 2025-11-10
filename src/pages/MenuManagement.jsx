@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { mockProducts } from '../data/mockData';
+import {
+  mockProducts,
+  mockCategories,
+  mockTaxSlabs,
+} from '../data/mockData';
 import styles from './MenuManagement.module.css';
 
 const MenuManagement = () => {
@@ -9,11 +13,12 @@ const MenuManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
+    sku: '',
     name: '',
-    category: '',
-    price: '',
-    unit: 'pcs',
-    taxRate: '',
+    category_id: '',
+    current_unit_price: '',
+    tax_slab_id: '',
+    is_active: 1,
   });
 
   const isOwner = user?.role === 'owner';
@@ -25,14 +30,30 @@ const MenuManagement = () => {
     }).format(value);
   };
 
+  const getCategoryName = (categoryId) => {
+    const category = mockCategories.find((c) => c.id === categoryId);
+    return category ? category.name : 'Unknown';
+  };
+
+  const getTaxSlabName = (taxSlabId) => {
+    const taxSlab = mockTaxSlabs.find((t) => t.id === taxSlabId);
+    return taxSlab ? taxSlab.name : 'Unknown';
+  };
+
+  const getTaxRate = (taxSlabId) => {
+    const taxSlab = mockTaxSlabs.find((t) => t.id === taxSlabId);
+    return taxSlab ? taxSlab.rate : 0;
+  };
+
   const handleAdd = () => {
     setEditingProduct(null);
     setFormData({
+      sku: '',
       name: '',
-      category: '',
-      price: '',
-      unit: 'pcs',
-      taxRate: '',
+      category_id: '',
+      current_unit_price: '',
+      tax_slab_id: '',
+      is_active: 1,
     });
     setShowModal(true);
   };
@@ -40,11 +61,12 @@ const MenuManagement = () => {
   const handleEdit = (product) => {
     setEditingProduct(product);
     setFormData({
+      sku: product.sku || '',
       name: product.name,
-      category: product.category,
-      price: product.price.toString(),
-      unit: product.unit,
-      taxRate: product.taxRate.toString(),
+      category_id: product.category_id || '',
+      current_unit_price: product.current_unit_price.toString(),
+      tax_slab_id: product.tax_slab_id,
+      is_active: product.is_active,
     });
     setShowModal(true);
   };
@@ -65,8 +87,12 @@ const MenuManagement = () => {
             ? {
                 ...p,
                 ...formData,
-                price: parseFloat(formData.price),
-                taxRate: parseFloat(formData.taxRate),
+                current_unit_price: parseFloat(formData.current_unit_price),
+                tax_slab_id: parseInt(formData.tax_slab_id),
+                category_id: formData.category_id
+                  ? parseInt(formData.category_id)
+                  : null,
+                updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
               }
             : p
         )
@@ -74,17 +100,20 @@ const MenuManagement = () => {
     } else {
       // Add new product
       const newProduct = {
-        id: products.length + 1,
+        id: products.length > 0 ? Math.max(...products.map((p) => p.id)) + 1 : 1,
         ...formData,
-        price: parseFloat(formData.price),
-        taxRate: parseFloat(formData.taxRate),
+        current_unit_price: parseFloat(formData.current_unit_price),
+        tax_slab_id: parseInt(formData.tax_slab_id),
+        category_id: formData.category_id
+          ? parseInt(formData.category_id)
+          : null,
+        created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
       };
       setProducts([...products, newProduct]);
     }
     setShowModal(false);
   };
-
-  const categories = [...new Set(products.map((p) => p.category))];
 
   return (
     <div className={styles.menuManagement}>
@@ -101,42 +130,58 @@ const MenuManagement = () => {
         <table className={styles.table}>
           <thead>
             <tr>
+              <th>SKU</th>
               <th>Name</th>
               <th>Category</th>
               <th>Price</th>
-              <th>Unit</th>
+              <th>Tax Slab</th>
               <th>Tax Rate (%)</th>
+              <th>Status</th>
               {isOwner && <th>Actions</th>}
             </tr>
           </thead>
           <tbody>
-            {products.map((product) => (
-              <tr key={product.id}>
-                <td>{product.name}</td>
-                <td>{product.category}</td>
-                <td>{formatCurrency(product.price)}</td>
-                <td>{product.unit}</td>
-                <td>{product.taxRate}%</td>
-                {isOwner && (
+            {products
+              .filter((p) => p.is_active === 1)
+              .map((product) => (
+                <tr key={product.id}>
+                  <td>{product.sku || '-'}</td>
+                  <td>{product.name}</td>
+                  <td>{getCategoryName(product.category_id)}</td>
+                  <td>{formatCurrency(product.current_unit_price)}</td>
+                  <td>{getTaxSlabName(product.tax_slab_id)}</td>
+                  <td>{getTaxRate(product.tax_slab_id)}%</td>
                   <td>
-                    <div className={styles.actions}>
-                      <button
-                        className={styles.editBtn}
-                        onClick={() => handleEdit(product)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className={styles.deleteBtn}
-                        onClick={() => handleDelete(product.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    <span
+                      className={
+                        product.is_active === 1
+                          ? styles.statusActive
+                          : styles.statusInactive
+                      }
+                    >
+                      {product.is_active === 1 ? 'Active' : 'Inactive'}
+                    </span>
                   </td>
-                )}
-              </tr>
-            ))}
+                  {isOwner && (
+                    <td>
+                      <div className={styles.actions}>
+                        <button
+                          className={styles.editBtn}
+                          onClick={() => handleEdit(product)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => handleDelete(product.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
@@ -155,7 +200,17 @@ const MenuManagement = () => {
             </div>
             <form onSubmit={handleSubmit} className={styles.form}>
               <div className={styles.formGroup}>
-                <label>Product Name</label>
+                <label>SKU</label>
+                <input
+                  type="text"
+                  value={formData.sku}
+                  onChange={(e) =>
+                    setFormData({ ...formData, sku: e.target.value })
+                  }
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Product Name *</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -166,55 +221,68 @@ const MenuManagement = () => {
                 />
               </div>
               <div className={styles.formGroup}>
-                <label>Category</label>
-                <input
-                  type="text"
-                  value={formData.category}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Price (INR)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Unit</label>
+                <label>Category *</label>
                 <select
-                  value={formData.unit}
+                  value={formData.category_id}
                   onChange={(e) =>
-                    setFormData({ ...formData, unit: e.target.value })
+                    setFormData({ ...formData, category_id: e.target.value })
                   }
                   required
                 >
-                  <option value="kg">kg</option>
-                  <option value="g">g</option>
-                  <option value="L">L</option>
-                  <option value="ml">ml</option>
-                  <option value="pcs">pcs</option>
+                  <option value="">Select Category</option>
+                  {mockCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className={styles.formGroup}>
-                <label>Tax Rate (%)</label>
+                <label>Price (INR) *</label>
                 <input
                   type="number"
                   step="0.01"
-                  value={formData.taxRate}
+                  value={formData.current_unit_price}
                   onChange={(e) =>
-                    setFormData({ ...formData, taxRate: e.target.value })
+                    setFormData({
+                      ...formData,
+                      current_unit_price: e.target.value,
+                    })
                   }
                   required
                 />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Tax Slab *</label>
+                <select
+                  value={formData.tax_slab_id}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tax_slab_id: e.target.value })
+                  }
+                  required
+                >
+                  <option value="">Select Tax Slab</option>
+                  {mockTaxSlabs.map((taxSlab) => (
+                    <option key={taxSlab.id} value={taxSlab.id}>
+                      {taxSlab.name} ({taxSlab.rate}%)
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.formGroup}>
+                <label>Status</label>
+                <select
+                  value={formData.is_active}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      is_active: parseInt(e.target.value),
+                    })
+                  }
+                >
+                  <option value={1}>Active</option>
+                  <option value={0}>Inactive</option>
+                </select>
               </div>
               <div className={styles.modalActions}>
                 <button
@@ -237,4 +305,3 @@ const MenuManagement = () => {
 };
 
 export default MenuManagement;
-

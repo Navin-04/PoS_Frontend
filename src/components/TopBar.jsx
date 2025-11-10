@@ -24,7 +24,7 @@ const TopBar = () => {
       <div className={styles.rightSection}>
         <div className={styles.userInfo}>
           <div className={styles.userDetails}>
-            <span className={styles.userName}>{user?.name}</span>
+            <span className={styles.userName}>{user?.full_name || user?.name}</span>
             <span className={styles.userRole}>{getRoleLabel(user?.role)}</span>
           </div>
           <button className={styles.logoutBtn} onClick={handleLogout}>

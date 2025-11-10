@@ -13,6 +13,63 @@
   font-weight: 600;
 }
 
+.invoiceDetails {
+  margin-bottom: 24px;
+}
+
+.detailsCard {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.detailsCard h3 {
+  margin: 0 0 20px 0;
+  color: #2d3748;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+  font-family: inherit;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
 .billContainer {
   display: grid;
   grid-template-columns: 1fr 350px;
@@ -65,7 +122,7 @@
 
 .itemRow {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr auto;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1.5fr auto;
   gap: 12px;
   align-items: end;
   padding: 16px;
