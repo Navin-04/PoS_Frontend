@@ -1,0 +1,222 @@
+.billing {
+  padding: 30px;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.header h2 {
+  margin: 0;
+  color: #2d3748;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.billContainer {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 24px;
+}
+
+.itemsSection {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.itemsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.itemsHeader h3 {
+  margin: 0;
+  color: #2d3748;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.addItemBtn {
+  padding: 8px 16px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.addItemBtn:hover {
+  background-color: #2563eb;
+}
+
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.itemRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr auto;
+  gap: 12px;
+  align-items: end;
+  padding: 16px;
+  background-color: #f7fafc;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.itemField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.itemField label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.itemField input,
+.itemField select {
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.itemField input:focus,
+.itemField select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.disabledInput {
+  background-color: #f7fafc;
+  color: #718096;
+  cursor: not-allowed;
+}
+
+.removeBtn {
+  width: 32px;
+  height: 32px;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.removeBtn:hover {
+  background-color: #dc2626;
+}
+
+.totalsSection {
+  position: sticky;
+  top: 90px;
+  height: fit-content;
+}
+
+.totalsCard {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.totalsCard h3 {
+  margin: 0 0 20px 0;
+  color: #2d3748;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #e0e0e0;
+  color: #4a5568;
+  font-size: 14px;
+}
+
+.totalRow.grandTotal {
+  border-bottom: none;
+  border-top: 2px solid #3b82f6;
+  margin-top: 8px;
+  padding-top: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.saveBtn,
+.printBtn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.saveBtn {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.saveBtn:hover {
+  background-color: #2563eb;
+}
+
+.printBtn {
+  background-color: #10b981;
+  color: white;
+}
+
+.printBtn:hover {
+  background-color: #059669;
+}
+
+@media (max-width: 1200px) {
+  .billContainer {
+    grid-template-columns: 1fr;
+  }
+
+  .totalsSection {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .itemRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
