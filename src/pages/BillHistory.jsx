@@ -6,6 +6,7 @@ import {
   mockEmployees,
   mockPayments,
   getProductWithDetails,
+  mockOrganization,
 } from '../data/mockData';
 import styles from './BillHistory.module.css';
 
@@ -133,10 +134,121 @@ const BillHistory = () => {
     }
   };
 
+  const generateReceiptHtml = (invoice) => {
+    const currentDate = new Date(invoice.created_at).toLocaleString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const itemsRows = (invoice.items || [])
+      .map((item) => {
+        const desc = item.product ? item.product.name : item.description || '';
+        const qty = item.quantity;
+        const price = item.unit_price;
+        const total = item.line_total_incl_tax ?? (qty * price);
+        const discount = item.discount_amount || 0;
+        return `
+          <tr>
+            <td style="text-align:left;padding:4px 0;">${desc}</td>
+            <td style="text-align:center;padding:4px 0;">${qty}</td>
+            <td style="text-align:right;padding:4px 0;">${formatCurrency(price)}</td>
+            ${discount > 0 ? `<td style="text-align:right;padding:4px 0;">-${formatCurrency(discount)}</td>` : '<td style="text-align:right;padding:4px 0;">-</td>'}
+            <td style="text-align:right;padding:4px 0;font-weight:600;">${formatCurrency(total)}</td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    const subtotal = (invoice.items || []).reduce(
+      (sum, it) => sum + (it.line_total_excl_tax ?? (it.quantity * it.unit_price - (it.discount_amount || 0))),
+      0
+    );
+    const tax = (invoice.items || []).reduce(
+      (sum, it) => sum + (it.line_tax_amount ?? 0),
+      0
+    );
+    const grandTotal = invoice.total_amount ?? (subtotal + tax);
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8" />
+          <title>Invoice ${invoice.invoice_number}</title>
+          <style>
+            body { font-family: 'Courier New', monospace; margin: 0; padding: 16px; color: #000; }
+            .toolbar { position: sticky; top: 0; background: #f9fafb; padding: 8px 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 8px; }
+            .toolbar button { padding: 8px 14px; margin-right: 8px; border: none; background: #3b82f6; color: #fff; border-radius: 6px; cursor: pointer; }
+            .receipt { max-width: 80mm; margin: 0 auto; }
+            .receipt-header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+            .receipt-header h1 { font-size: 18px; margin: 0 0 4px 0; text-transform: uppercase; }
+            .receipt-info { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed #000; }
+            .row { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+            thead { border-top: 1px dashed #000; border-bottom: 1px dashed #000; }
+            th { text-align: left; font-size: 11px; padding: 4px 0; }
+            th:nth-child(2), th:nth-child(3), th:nth-child(4), th:nth-child(5) { text-align: right; }
+            td { font-size: 12px; }
+            .totals { border-top: 2px dashed #000; padding-top: 8px; }
+            .grand { font-weight: 700; font-size: 14px; border-top: 2px solid #000; margin-top: 6px; padding-top: 6px; }
+          </style>
+        </head>
+        <body>
+          <div class="toolbar">
+            <button onclick="window.print()">Print</button>
+            <button onclick="window.close()" style="background:#6b7280">Close</button>
+          </div>
+          <div class="receipt">
+            <div class="receipt-header">
+              <h1>${mockOrganization.name}</h1>
+              <div style="font-size:11px;">${mockOrganization.address}</div>
+              <div style="font-size:11px;">Phone: ${mockOrganization.phone} • GST: ${mockOrganization.gst}</div>
+            </div>
+            <div class="receipt-info">
+              <div class="row"><strong>Invoice No:</strong><span>${invoice.invoice_number}</span></div>
+              <div class="row"><strong>Date:</strong><span>${currentDate}</span></div>
+              ${invoice.table_number ? `<div class="row"><strong>Table:</strong><span>${invoice.table_number}</span></div>` : ''}
+              <div class="row"><strong>Order Type:</strong><span>${(invoice.order_type || '').toUpperCase()}</span></div>
+              ${invoice.employee ? `<div class="row"><strong>Staff:</strong><span>${invoice.employee}</span></div>` : ''}
+              <div class="row"><strong>Status:</strong><span>${(invoice.status || '').toUpperCase()}</span></div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th style="text-align:left;">Item</th>
+                  <th>Qty</th>
+                  <th>Price</th>
+                  <th>Disc</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsRows}
+              </tbody>
+            </table>
+            <div class="totals">
+              <div class="row"><span>Subtotal (Excl. Tax):</span><span>${formatCurrency(subtotal)}</span></div>
+              <div class="row"><span>Tax:</span><span>${formatCurrency(tax)}</span></div>
+              <div class="row grand"><span>GRAND TOTAL:</span><span>${formatCurrency(grandTotal)}</span></div>
+            </div>
+            ${invoice.notes ? `<div style="margin-top:8px;font-size:11px;"><strong>Notes:</strong> ${invoice.notes}</div>` : ''}
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
   const handleView = (invoice) => {
-    const invoiceDetails = getInvoiceWithDetails(invoice.id);
-    console.log('Invoice Details:', invoiceDetails);
-    alert(`View invoice ${invoice.invoice_number} (Mock action)`);
+    const details = getInvoiceWithDetails(invoice.id);
+    if (!details) {
+      alert('Invoice not found');
+      return;
+    }
+    const w = window.open('', '_blank');
+    w.document.write(generateReceiptHtml(details));
+    w.document.close();
   };
 
   return (

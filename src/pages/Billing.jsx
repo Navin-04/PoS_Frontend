@@ -8,6 +8,7 @@ import {
   mockEmployees,
   getProductWithDetails,
   mockOrganization,
+  mockCategories,
 } from '../data/mockData';
 import styles from './Billing.module.css';
 
@@ -29,6 +30,7 @@ const Billing = () => {
     notes: '',
     employee_id: null,
   });
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null); // null => All
 
   // Load invoice data when in edit mode
   useEffect(() => {
@@ -70,6 +72,48 @@ const Billing = () => {
 
   const getProduct = (productId) => {
     return getProductWithDetails(parseInt(productId));
+  };
+
+  // Quick menu helpers
+  const getItemIndexByProduct = (productId) => {
+    return items.findIndex(i => i.productId && parseInt(i.productId) === parseInt(productId));
+  };
+
+  const getQuantityForProduct = (productId) => {
+    const idx = getItemIndexByProduct(productId);
+    return idx >= 0 ? parseFloat(items[idx].quantity) || 0 : 0;
+  };
+
+  const incrementProduct = (productId) => {
+    setItems(prev => {
+      const idx = prev.findIndex(i => i.productId && parseInt(i.productId) === parseInt(productId));
+      if (idx >= 0) {
+        const updated = [...prev];
+        const currentQty = parseFloat(updated[idx].quantity) || 0;
+        updated[idx] = { ...updated[idx], quantity: currentQty + 1 };
+        return updated;
+      }
+      return [
+        ...prev,
+        { productId: productId.toString(), quantity: 1, discount_amount: 0 }
+      ];
+    });
+  };
+
+  const decrementProduct = (productId) => {
+    setItems(prev => {
+      const idx = prev.findIndex(i => i.productId && parseInt(i.productId) === parseInt(productId));
+      if (idx === -1) return prev;
+      const updated = [...prev];
+      const currentQty = parseFloat(updated[idx].quantity) || 0;
+      const nextQty = Math.max(0, currentQty - 1);
+      if (nextQty === 0) {
+        // remove the row entirely
+        return updated.filter((_, i) => i !== idx);
+      }
+      updated[idx] = { ...updated[idx], quantity: nextQty };
+      return updated;
+    });
   };
 
   const calculateItemTotals = (item) => {
@@ -467,6 +511,13 @@ const Billing = () => {
 
   const totals = calculateTotals();
   const activeProducts = mockProducts.filter((p) => p.is_active === 1);
+  const categoriesForDisplay = [
+    { id: null, name: 'All' },
+    ...mockCategories
+  ];
+  const filteredProducts = activeProducts.filter(p => {
+    return selectedCategoryId === null ? true : p.category_id === selectedCategoryId;
+  });
 
   const currentInvoice = isEditMode 
     ? invoices.find(inv => inv.id === parseInt(editInvoiceId))
@@ -581,9 +632,73 @@ const Billing = () => {
         <div className={styles.itemsSection}>
           <div className={styles.itemsHeader}>
             <h3>Invoice Items</h3>
-            <button className={styles.addItemBtn} onClick={handleAddItem}>
-              + Add Item
-            </button>
+          </div>
+
+          {/* Category Selector */}
+          <div className={styles.categoryBar}>
+            <div className={styles.categoryGrid}>
+              {categoriesForDisplay.map((cat) => {
+                const isActive = selectedCategoryId === cat.id;
+                return (
+                  <button
+                    key={cat.id === null ? 'all' : cat.id}
+                    type="button"
+                    className={isActive ? styles.categoryTileActive : styles.categoryTile}
+                    onClick={() => setSelectedCategoryId(cat.id)}
+                    title={cat.name}
+                  >
+                    <span className={styles.categoryEmoji}>
+                      {cat.id === null
+                        ? '🧾'
+                        : cat.name.includes('Beverage')
+                          ? '🥤'
+                          : cat.name.includes('Dessert')
+                            ? '🍨'
+                            : cat.name.includes('Appetizer')
+                              ? '🥗'
+                              : '🍽️'}
+                    </span>
+                    <span className={styles.categoryName}>{cat.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Quick Menu Grid - Active Menus only */}
+          <div className={styles.quickMenu}>
+            <div className={styles.quickMenuHeader}>
+              <h4>Quick Menu</h4>
+            </div>
+            <div className={styles.menuGrid}>
+              {filteredProducts.map((prod) => (
+                <div key={prod.id} className={styles.menuTile}>
+                  <div className={styles.menuInfo}>
+                    <div className={styles.menuName}>{prod.name}</div>
+                    <div className={styles.menuPrice}>{formatCurrency(prod.current_unit_price)}</div>
+                  </div>
+                  <div className={styles.qtyControls}>
+                    <button
+                      type="button"
+                      className={styles.qtyBtn}
+                      onClick={() => decrementProduct(prod.id)}
+                    >
+                      −
+                    </button>
+                    <div className={styles.qtyValue}>
+                      {getQuantityForProduct(prod.id)}
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.qtyBtn}
+                      onClick={() => incrementProduct(prod.id)}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className={styles.itemsList}>
