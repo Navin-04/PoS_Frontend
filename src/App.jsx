@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { InvoiceProvider } from './context/InvoiceContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -42,8 +43,9 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
+      <InvoiceProvider>
+        <Router>
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route
             path="/dashboard"
@@ -88,7 +90,8 @@ function App() {
           <Route path="/unauthorized" element={<Unauthorized />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
-      </Router>
+        </Router>
+      </InvoiceProvider>
     </AuthProvider>
   );
 }

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useInvoices } from '../context/InvoiceContext';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   mockProducts,
   mockTaxSlabs,
@@ -10,6 +12,12 @@ import styles from './Billing.module.css';
 
 const Billing = () => {
   const { user } = useAuth();
+  const { addInvoice, updateInvoiceWithItems, invoices, invoiceItems } = useInvoices();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const editInvoiceId = searchParams.get('edit');
+  const isEditMode = !!editInvoiceId;
+
   const [items, setItems] = useState([
     { productId: '', quantity: 1, discount_amount: 0 },
   ]);
@@ -20,6 +28,37 @@ const Billing = () => {
     notes: '',
     employee_id: null,
   });
+
+  // Load invoice data when in edit mode
+  useEffect(() => {
+    if (isEditMode && editInvoiceId) {
+      const invoice = invoices.find(inv => inv.id === parseInt(editInvoiceId));
+      if (invoice) {
+        // Load invoice details
+        setInvoiceDetails({
+          table_number: invoice.table_number || '',
+          order_type: invoice.order_type || 'dine-in',
+          status: invoice.status || 'draft',
+          notes: invoice.notes || '',
+          employee_id: invoice.employee_id || null,
+        });
+
+        // Load invoice items
+        const invoiceItemsList = invoiceItems.filter(
+          item => item.invoice_id === parseInt(editInvoiceId)
+        );
+        if (invoiceItemsList.length > 0) {
+          setItems(
+            invoiceItemsList.map(item => ({
+              productId: item.product_id.toString(),
+              quantity: item.quantity,
+              discount_amount: item.discount_amount,
+            }))
+          );
+        }
+      }
+    }
+  }, [isEditMode, editInvoiceId, invoices, invoiceItems]);
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-IN', {
@@ -107,7 +146,9 @@ const Billing = () => {
     }
 
     const invoiceData = {
-      invoice_number: `TINV${Date.now()}`,
+      invoice_number: isEditMode 
+        ? invoices.find(inv => inv.id === parseInt(editInvoiceId))?.invoice_number 
+        : `TINV${Date.now()}`,
       created_by: user?.id || null,
       status: invoiceDetails.status,
       total_amount: calculateTotals().total,
@@ -132,16 +173,25 @@ const Billing = () => {
       }),
     };
 
-    console.log('Invoice Data:', invoiceData);
-    alert('Bill saved successfully! (Mock action)');
-    setItems([{ productId: '', quantity: 1, discount_amount: 0 }]);
-    setInvoiceDetails({
-      table_number: '',
-      order_type: 'dine-in',
-      status: 'draft',
-      notes: '',
-      employee_id: null,
-    });
+    if (isEditMode) {
+      // Update existing invoice
+      updateInvoiceWithItems(parseInt(editInvoiceId), invoiceData);
+      alert('Bill updated successfully!');
+      navigate('/bill-history');
+    } else {
+      // Add new invoice
+      addInvoice(invoiceData);
+      console.log('Invoice Data:', invoiceData);
+      alert('Bill saved successfully!');
+      setItems([{ productId: '', quantity: 1, discount_amount: 0 }]);
+      setInvoiceDetails({
+        table_number: '',
+        order_type: 'dine-in',
+        status: 'draft',
+        notes: '',
+        employee_id: null,
+      });
+    }
   };
 
   const handlePrint = () => {
@@ -151,10 +201,19 @@ const Billing = () => {
   const totals = calculateTotals();
   const activeProducts = mockProducts.filter((p) => p.is_active === 1);
 
+  const currentInvoice = isEditMode 
+    ? invoices.find(inv => inv.id === parseInt(editInvoiceId))
+    : null;
+
   return (
     <div className={styles.billing}>
       <div className={styles.header}>
-        <h2>Create New Invoice</h2>
+        <h2>{isEditMode ? 'Edit Invoice' : 'Create New Invoice'}</h2>
+        {isEditMode && currentInvoice && (
+          <p style={{ marginTop: '8px', color: '#666', fontSize: '14px' }}>
+            Invoice Number: <strong>{currentInvoice.invoice_number}</strong>
+          </p>
+        )}
       </div>
 
       <div className={styles.invoiceDetails}>
@@ -378,8 +437,17 @@ const Billing = () => {
             </div>
             <div className={styles.actions}>
               <button className={styles.saveBtn} onClick={handleSaveBill}>
-                Save Invoice
+                {isEditMode ? 'Update Invoice' : 'Save Invoice'}
               </button>
+              {isEditMode && (
+                <button 
+                  className={styles.cancelBtn} 
+                  onClick={() => navigate('/bill-history')}
+                  style={{ marginLeft: '10px', padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+              )}
               <button className={styles.printBtn} onClick={handlePrint}>
                 Print
               </button>

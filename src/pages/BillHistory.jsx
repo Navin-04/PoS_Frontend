@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useInvoices } from '../context/InvoiceContext';
 import {
-  mockInvoices,
-  mockInvoiceItems,
   mockEmployees,
-  getInvoiceWithDetails,
+  mockPayments,
+  getProductWithDetails,
 } from '../data/mockData';
 import styles from './BillHistory.module.css';
 
 const BillHistory = () => {
   const { user } = useAuth();
-  const [invoices] = useState(mockInvoices);
+  const { invoices, invoiceItems, deleteInvoice } = useInvoices();
+  const navigate = useNavigate();
   const [filters, setFilters] = useState({
     date: '',
     employee: '',
@@ -20,6 +22,29 @@ const BillHistory = () => {
   });
 
   const isOwner = user?.role === 'owner';
+
+  // Helper function to get invoice with details using context data
+  const getInvoiceWithDetails = (invoiceId) => {
+    const invoice = invoices.find((inv) => inv.id === invoiceId);
+    if (!invoice) return null;
+
+    const items = invoiceItems.filter((item) => item.invoice_id === invoiceId);
+    const employee = mockEmployees.find((emp) => emp.id === invoice.employee_id);
+    const payment = mockPayments.find((pay) => pay.invoice_id === invoiceId);
+
+    return {
+      ...invoice,
+      items: items.map((item) => {
+        const product = getProductWithDetails(item.product_id);
+        return {
+          ...item,
+          product: product,
+        };
+      }),
+      employee: employee ? employee.full_name : 'Unknown',
+      payment: payment || null,
+    };
+  };
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-IN', {
@@ -94,16 +119,17 @@ const BillHistory = () => {
   };
 
   const handleEdit = (invoice) => {
-    alert(`Edit invoice ${invoice.invoice_number} (Mock action)`);
+    navigate(`/billing?edit=${invoice.id}`);
   };
 
   const handleDelete = (invoice) => {
     if (
       window.confirm(
-        `Are you sure you want to delete ${invoice.invoice_number}?`
+        `Are you sure you want to delete invoice ${invoice.invoice_number}? This action cannot be undone.`
       )
     ) {
-      alert(`Invoice ${invoice.invoice_number} deleted (Mock action)`);
+      deleteInvoice(invoice.id);
+      alert(`Invoice ${invoice.invoice_number} deleted successfully!`);
     }
   };
 

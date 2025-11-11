@@ -1,11 +1,21 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMockStats, mockInvoices, mockProducts } from '../data/mockData';
+import { useInvoices } from '../context/InvoiceContext';
+import { mockProducts } from '../data/mockData';
 import styles from './Dashboard.module.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const stats = getMockStats();
+  const { invoices } = useInvoices();
+  
+  // Calculate stats from current invoices
+  const stats = {
+    totalRevenue: invoices
+      .filter((inv) => inv.status === 'paid')
+      .reduce((sum, inv) => sum + parseFloat(inv.total_amount), 0),
+    totalBills: invoices.length,
+    totalProducts: mockProducts.filter((p) => p.is_active === 1).length,
+  };
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-IN', {
