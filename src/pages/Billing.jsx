@@ -7,6 +7,7 @@ import {
   mockTaxSlabs,
   mockEmployees,
   getProductWithDetails,
+  mockOrganization,
 } from '../data/mockData';
 import styles from './Billing.module.css';
 
@@ -195,7 +196,273 @@ const Billing = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    const printContent = generatePrintContent();
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Wait for content to load, then print
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      // Close window after printing (optional)
+      // printWindow.close();
+    }, 250);
+  };
+
+  const generatePrintContent = () => {
+    const currentInvoiceForPrint = isEditMode 
+      ? invoices.find(inv => inv.id === parseInt(editInvoiceId))
+      : null;
+    
+    const invoiceNumber = isEditMode && currentInvoiceForPrint 
+      ? currentInvoiceForPrint.invoice_number 
+      : `TINV${Date.now()}`;
+    
+    const currentDate = new Date().toLocaleString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const employee = invoiceDetails.employee_id 
+      ? mockEmployees.find(emp => emp.id === invoiceDetails.employee_id)
+      : null;
+
+    // Calculate totals for print
+    const printTotals = calculateTotals();
+
+    let itemsHtml = '';
+    items.forEach((item, index) => {
+      if (!item.productId) return;
+      const product = getProduct(item.productId);
+      if (!product) return;
+      const itemTotals = calculateItemTotals(item);
+      
+      itemsHtml += `
+        <tr>
+          <td style="text-align: left; padding: 4px 0;">${product.name}</td>
+          <td style="text-align: center; padding: 4px 0;">${item.quantity}</td>
+          <td style="text-align: right; padding: 4px 0;">${formatCurrency(product.current_unit_price)}</td>
+          ${item.discount_amount > 0 ? `<td style="text-align: right; padding: 4px 0;">-${formatCurrency(item.discount_amount)}</td>` : '<td style="text-align: right; padding: 4px 0;">-</td>'}
+          <td style="text-align: right; padding: 4px 0; font-weight: 600;">${formatCurrency(itemTotals.inclTax)}</td>
+        </tr>
+      `;
+    });
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Invoice ${invoiceNumber}</title>
+          <style>
+            @page {
+              size: A4;
+              margin: 0.3cm;
+            }
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: 'Courier New', monospace;
+              font-size: 11px;
+              line-height: 1.3;
+              color: #000;
+              padding: 15px;
+              max-width: 80mm;
+              margin: 0 auto;
+            }
+            .receipt-header {
+              text-align: center;
+              border-bottom: 2px dashed #000;
+              padding-bottom: 10px;
+              margin-bottom: 10px;
+            }
+            .receipt-header h1 {
+              font-size: 18px;
+              font-weight: bold;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+            }
+            .receipt-header p {
+              font-size: 9px;
+              margin: 1px 0;
+            }
+            .receipt-info {
+              margin-bottom: 10px;
+              padding-bottom: 8px;
+              border-bottom: 1px dashed #000;
+            }
+            .receipt-info-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 3px;
+              font-size: 10px;
+            }
+            .receipt-info-label {
+              font-weight: bold;
+            }
+            .items-table {
+              width: 100%;
+              margin: 10px 0;
+              border-collapse: collapse;
+            }
+            .items-table thead {
+              border-bottom: 1px dashed #000;
+              border-top: 1px dashed #000;
+            }
+            .items-table th {
+              text-align: left;
+              padding: 4px 0;
+              font-size: 9px;
+              font-weight: bold;
+              text-transform: uppercase;
+            }
+            .items-table th:nth-child(2),
+            .items-table th:nth-child(3),
+            .items-table th:nth-child(4),
+            .items-table th:nth-child(5) {
+              text-align: right;
+            }
+            .items-table td {
+              padding: 3px 0;
+              font-size: 10px;
+            }
+            .totals-section {
+              margin-top: 10px;
+              padding-top: 8px;
+              border-top: 2px dashed #000;
+            }
+            .total-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 4px;
+              font-size: 10px;
+            }
+            .total-row.grand-total {
+              font-size: 13px;
+              font-weight: bold;
+              margin-top: 6px;
+              padding-top: 6px;
+              border-top: 2px solid #000;
+            }
+            .receipt-footer {
+              text-align: center;
+              margin-top: 15px;
+              padding-top: 10px;
+              border-top: 1px dashed #000;
+              font-size: 9px;
+            }
+            .receipt-footer p {
+              margin: 3px 0;
+            }
+            .divider {
+              border-top: 1px dashed #000;
+              margin: 8px 0;
+            }
+            @media print {
+              body {
+                padding: 8px;
+                font-size: 10px;
+              }
+              @page {
+                size: A4;
+                margin: 0.3cm;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="receipt-header">
+            <h1>${mockOrganization.name}</h1>
+            <p>${mockOrganization.address}</p>
+            <p>Phone: ${mockOrganization.phone}</p>
+            <p>GST: ${mockOrganization.gst}</p>
+          </div>
+
+          <div class="receipt-info">
+            <div class="receipt-info-row">
+              <span class="receipt-info-label">Invoice No:</span>
+              <span>${invoiceNumber}</span>
+            </div>
+            <div class="receipt-info-row">
+              <span class="receipt-info-label">Date:</span>
+              <span>${currentDate}</span>
+            </div>
+            ${invoiceDetails.table_number ? `
+            <div class="receipt-info-row">
+              <span class="receipt-info-label">Table:</span>
+              <span>${invoiceDetails.table_number}</span>
+            </div>
+            ` : ''}
+            <div class="receipt-info-row">
+              <span class="receipt-info-label">Order Type:</span>
+              <span>${invoiceDetails.order_type.toUpperCase()}</span>
+            </div>
+            ${employee ? `
+            <div class="receipt-info-row">
+              <span class="receipt-info-label">Staff:</span>
+              <span>${employee.full_name}</span>
+            </div>
+            ` : ''}
+          </div>
+
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Disc</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+
+          <div class="totals-section">
+            <div class="total-row">
+              <span>Subtotal (Excl. Tax):</span>
+              <span>${formatCurrency(printTotals.subtotal)}</span>
+            </div>
+            <div class="total-row">
+              <span>Tax:</span>
+              <span>${formatCurrency(printTotals.tax)}</span>
+            </div>
+            <div class="total-row grand-total">
+              <span>GRAND TOTAL:</span>
+              <span>${formatCurrency(printTotals.total)}</span>
+            </div>
+          </div>
+
+          ${invoiceDetails.notes ? `
+          <div class="divider"></div>
+          <div style="font-size: 9px; margin-top: 8px;">
+            <strong>Notes:</strong> ${invoiceDetails.notes}
+          </div>
+          ` : ''}
+
+          <div class="receipt-footer">
+            <div class="divider"></div>
+            <p><strong>Thank You for Your Visit!</strong></p>
+            <p>Please visit us again</p>
+            <p style="margin-top: 10px; font-size: 9px;">
+              This is a computer generated invoice
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
   };
 
   const totals = calculateTotals();

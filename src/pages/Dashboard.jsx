@@ -10,7 +10,7 @@ const Dashboard = () => {
   
   // Calculate stats from current invoices
   const stats = {
-    totalRevenue: invoices
+    totalRevenue: invoices 
       .filter((inv) => inv.status === 'paid')
       .reduce((sum, inv) => sum + parseFloat(inv.total_amount), 0),
     totalBills: invoices.length,
